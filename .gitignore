@@ -1,0 +1,6 @@
+*.suo
+Machine/bin/
+Machine/obj/
+MachineJP/bin/
+MachineJP/obj/
+
