@@ -1,0 +1,9 @@
+D:\Project\售药机项目\trunk\03_工作库\04_编码\苏翔－技术调查\WinForm浏览器\Machine\bin\Debug\Machine.dll
+D:\Project\售药机项目\trunk\03_工作库\04_编码\苏翔－技术调查\WinForm浏览器\Machine\bin\Debug\Machine.pdb
+D:\Project\售药机项目\trunk\03_工作库\04_编码\苏翔－技术调查\WinForm浏览器\Machine\obj\Debug\Machine.dll
+D:\Project\售药机项目\trunk\03_工作库\04_编码\苏翔－技术调查\WinForm浏览器\Machine\obj\Debug\Machine.pdb
+D:\_项目代码\售药机项目\WinForm浏览器Modify\Machine\bin\Debug\Machine.dll
+D:\_项目代码\售药机项目\WinForm浏览器Modify\Machine\bin\Debug\Machine.pdb
+D:\_项目代码\售药机项目\WinForm浏览器Modify\Machine\obj\Debug\Machine.dll
+D:\_项目代码\售药机项目\WinForm浏览器Modify\Machine\obj\Debug\Machine.pdb
+D:\_项目代码\售药机项目\WinForm浏览器Modify\Machine\obj\Debug\Machine.csprojResolveAssemblyReference.cache

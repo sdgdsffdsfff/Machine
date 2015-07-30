@@ -1,0 +1,17 @@
+D:\_项目代码\售药机项目\TMGO2O_Machine\Reception\MachineJP\obj\Debug\MachineJP.csprojResolveAssemblyReference.cache
+D:\_项目代码\售药机项目\TMGO2O_Machine\Reception\MachineJP\bin\Debug\MachineJP.dll
+D:\_项目代码\售药机项目\TMGO2O_Machine\Reception\MachineJP\bin\Debug\MachineJP.pdb
+D:\_项目代码\售药机项目\TMGO2O_Machine\Reception\MachineJP\bin\Debug\IMachine.dll
+D:\_项目代码\售药机项目\TMGO2O_Machine\Reception\MachineJP\bin\Debug\IMachine.pdb
+D:\_项目代码\售药机项目\TMGO2O_Machine\Reception\MachineJP\obj\Debug\MachineJP.dll
+D:\_项目代码\售药机项目\TMGO2O_Machine\Reception\MachineJP\obj\Debug\MachineJP.pdb
+D:\_项目代码\售药机项目\货机接口\Machine\MachineJP\bin\Debug\MachineJP.dll
+D:\_项目代码\售药机项目\货机接口\Machine\MachineJP\bin\Debug\MachineJP.pdb
+D:\_项目代码\售药机项目\货机接口\Machine\MachineJP\obj\Debug\MachineJP.csprojResolveAssemblyReference.cache
+D:\_项目代码\售药机项目\货机接口\Machine\MachineJP\obj\Debug\MachineJP.dll
+D:\_项目代码\售药机项目\货机接口\Machine\MachineJP\obj\Debug\MachineJP.pdb
+D:\_项目代码\售药机项目\WinForm浏览器Modify\MachineJP\bin\Debug\MachineJP.dll
+D:\_项目代码\售药机项目\WinForm浏览器Modify\MachineJP\bin\Debug\MachineJP.pdb
+D:\_项目代码\售药机项目\WinForm浏览器Modify\MachineJP\obj\Debug\MachineJP.dll
+D:\_项目代码\售药机项目\WinForm浏览器Modify\MachineJP\obj\Debug\MachineJP.pdb
+D:\_项目代码\售药机项目\WinForm浏览器Modify\MachineJP\obj\Debug\MachineJP.csprojResolveAssemblyReference.cache
