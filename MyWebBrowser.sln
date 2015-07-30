@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyWebBrowser", "WinForm浏览器\MyWebBrowser.csproj", "{27C4A9D7-E163-4BA2-BEEE-CB923B8E4FB5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineJP", "MachineJP\MachineJP.csproj", "{EC167FAC-26A3-4F66-85B5-8219A9918FCF}"
