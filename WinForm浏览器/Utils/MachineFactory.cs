@@ -374,10 +374,9 @@ namespace MyWebBrowser.Utils
         /// <summary>
         /// 微信取货
         /// </summary>
-        /// <param name="path">网站bin目录</param>
         /// <param name="checkDrop">是否掉货检测</param>
         /// <param name="jsonData">数据</param>
-        public bool WXTakeGood(string path, bool checkDrop, string jsonData)
+        public static bool WXTakeGood(bool checkDrop, string jsonData)
         {
             JObject jObject = JObject.Parse(jsonData);
 

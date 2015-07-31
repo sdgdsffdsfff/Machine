@@ -126,5 +126,67 @@ namespace MyWebBrowser.Utils
         }
         #endregion
 
+        #region 直接取货
+        /// <summary>
+        /// 直接取货
+        /// </summary>
+        public void TakeGood(bool checkDrop, string orderId)
+        {
+            new Thread(new ThreadStart(delegate()
+            {
+                MachineFactory.TakeGood(checkDrop, orderId);
+            })).Start();
+        }
+        #endregion
+
+        #region 微信取货
+        /// <summary>
+        /// 微信取货
+        /// </summary>
+        public void WXTakeGood(bool checkDrop, string orderId)
+        {
+            new Thread(new ThreadStart(delegate()
+            {
+                while (true)
+                {
+                    try
+                    {
+                        string shopId = HttpRequestUtil.PostUrl("GetShopId");
+                        string url = ConfigurationManager.AppSettings["RemoteUrl"] + "/TMGO2O_Wechat/pickup/cargoGoods.html?shopId=" + shopId;
+                        string strJson = HttpRequestUtil.PostRemoteUrl(url);
+
+                        MachineFactory.WXTakeGood(false, strJson);
+                    }
+                    catch (Exception ex)
+                    {
+                        //在这里写错误日志
+                    }
+
+                    Thread.Sleep(3000);
+                }
+            })).Start();
+        }
+        #endregion
+
+        #region 货机检测
+        /// <summary>
+        /// 微信取货
+        /// </summary>
+        public void MachineCheck(bool checkDrop, string orderId)
+        {
+            new Thread(new ThreadStart(delegate()
+            {
+                string result = MachineFactory.MachineCheck_Main() + MachineFactory.MachineCheck_Box();
+                //在这里调用JS
+                InvokeUtil.Invoke(m_WebBrowser, new InvokeDelegate(delegate()
+                {
+                    object[] objects = new object[1];
+                    objects[0] = result;
+                    m_WebBrowser.Document.InvokeScript("machineCheckResult", objects);
+                }));
+            })).Start();
+        }
+        #endregion
+
     }
 }
