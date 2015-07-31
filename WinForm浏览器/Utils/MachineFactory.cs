@@ -9,6 +9,8 @@ using System.Threading;
 using MachineJPDll.Models;
 using MachineJPDll.Enums;
 using MachineDll.Models;
+using Newtonsoft.Json.Linq;
+using System.Data;
 
 namespace MyWebBrowser.Utils
 {
@@ -246,6 +248,250 @@ namespace MyWebBrowser.Utils
         }
         #endregion
 
+        #region 直接取货
+        /// <summary>
+        /// 直接取货
+        /// </summary>
+        /// <param name="checkDrop">是否掉货检测</param>
+        /// <param name="orderId">订单ID</param>
+        public static bool TakeGood(bool checkDrop, string orderId)
+        {
+            string boxId = HttpRequestUtil.PostUrl("GetBoxId", "orderId=" + orderId);
+            string com = HttpRequestUtil.PostUrl("GetCom", "boxId=" + boxId);
+            MachineModel machine = GetMachine(com);
+            List<Dictionary<string, string>> roadList = JsonHelper.JsonToListDic(HttpRequestUtil.PostUrl("GetRoad", "orderId=" + orderId));
+
+            #region 金码
+            if (machine.Type == MachineType.金码)
+            {
+                int remainder = 0;
+                bool isSuccess = true;
+                string msg;
+
+                foreach (Dictionary<string, string> road in roadList)
+                {
+                    for (int i = 0; i < int.Parse(road["productNum"]); i++)
+                    {
+                        int boxNo = int.Parse(HttpRequestUtil.PostUrl("GetBoxNo", "boxId=" + boxId));
+                        if (machine.Machine.Connect(out msg) && machine.Machine.Shipment(boxNo, int.Parse(road["layerNo"]), int.Parse(road["roadNo"]), false, 0, checkDrop, out msg))
+                        {
+                            bool isSucessTemp = false;
+                            string msgTemp = null;
+                            while (!machine.Machine.QueryShipment(out isSucessTemp, out remainder, false, out msgTemp))
+                            {
+                                Thread.Sleep(50);
+                            }
+                            if (!isSuccess)
+                            {
+                                msg += msgTemp;
+                                isSuccess = false;
+                                HttpRequestUtil.PostUrl("AddBreakdownAlarm", "msg=" + msg); //故障报警
+                            }
+                            else
+                            {
+                                //更新商品出货明细
+                                HttpRequestUtil.PostUrl("AddOrderSendDetail", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&roadId=" + road["roadId"]);
+                                //更新每盒跟踪
+                                HttpRequestUtil.PostUrl("UpdateRoadProduct", "roadId=" + road["roadId"]);
+                                //更新商品批次仓库关联表
+                                HttpRequestUtil.PostUrl("UpdateProductBatchesStore", "roadId=" + road["roadId"]);
+                                //更新商品销售数量表
+                                HttpRequestUtil.PostUrl("UpdateProductSaleNum", "productId=" + road["productId"]);
+                            }
+                        }
+                        else
+                        {
+                            HttpRequestUtil.PostUrl("AddBreakdownAlarm", "msg=" + msg); //故障报警
+
+                            return false;
+                        }
+                    }
+
+                    //更新货道现有商品数量
+                    HttpRequestUtil.PostUrl("UpdateCoinAndPaperCount", "roadId=" + road["roadId"] + "&sellNum=" + road["productNum"]);
+                    //商品出货记录表
+                    HttpRequestUtil.PostUrl("AddDeliveryRecord", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&shipmentNum=" + road["productNum"]);
+                }
+
+                //更新订单状态
+                HttpRequestUtil.PostUrl("UpdateOrderStatus", "orderId=" + orderId);
+
+                return true;
+            }
+            #endregion
+
+            #region 骏鹏
+            if (machine.Type == MachineType.骏鹏)
+            {
+                int remainder = 0;
+                bool isSuccess = true;
+                string msg;
+
+                foreach (Dictionary<string, string> road in roadList)
+                {
+                    for (int i = 0; i < int.Parse(road["productNum"]); i++)
+                    {
+                        int boxNo = int.Parse(HttpRequestUtil.PostUrl("GetBoxNo", "boxId=" + boxId));
+                        byte HDID = byte.Parse(HttpRequestUtil.PostUrl("GetHDID", "boxId=" + boxId + "&layerNo=" + road["layerNo"] + "&roadNo=" + road["roadNo"]));
+                        VendoutRpt vendoutRpt = machine.MachineJP.VENDOUT_IND((byte)boxNo, 2, HDID, 1, 0);
+                        if (vendoutRpt.status == 0)
+                        {
+                            //更新商品出货明细
+                            HttpRequestUtil.PostUrl("AddOrderSendDetail", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&roadId=" + road["roadId"]);
+                            //更新每盒跟踪
+                            HttpRequestUtil.PostUrl("UpdateRoadProduct", "roadId=" + road["roadId"]);
+                            //更新商品批次仓库关联表
+                            HttpRequestUtil.PostUrl("UpdateProductBatchesStore", "roadId=" + road["roadId"]);
+                            //更新商品销售数量表
+                            HttpRequestUtil.PostUrl("UpdateProductSaleNum", "productId=" + road["productId"]);
+                        }
+                        else
+                        {
+                            HttpRequestUtil.PostUrl("AddBreakdownAlarm", "msg=出货失败"); //故障报警
+
+                            return false;
+                        }
+                    }
+
+                    //更新货道现有商品数量
+                    HttpRequestUtil.PostUrl("UpdateCoinAndPaperCount", "roadId=" + road["roadId"] + "&sellNum=" + road["productNum"]);
+                    //商品出货记录表
+                    HttpRequestUtil.PostUrl("AddDeliveryRecord", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&shipmentNum=" + road["productNum"]);
+                }
+
+                //更新订单状态
+                HttpRequestUtil.PostUrl("UpdateOrderStatus", "orderId=" + orderId);
+
+                return true;
+            }
+            #endregion
+
+            return false;
+        }
+        #endregion
+
+        #region 微信取货
+        /// <summary>
+        /// 微信取货
+        /// </summary>
+        /// <param name="path">网站bin目录</param>
+        /// <param name="checkDrop">是否掉货检测</param>
+        /// <param name="jsonData">数据</param>
+        public bool WXTakeGood(string path, bool checkDrop, string jsonData)
+        {
+            JObject jObject = JObject.Parse(jsonData);
+
+            foreach (JToken jToken in jObject["pickup"])
+            {
+                string orderId = jToken["orderId"].ToString();
+                string productId = jToken["productId"].ToString();
+                string productNum = jToken["productNum"].ToString();
+                string productPrice = jToken["productPrice"].ToString();
+                string orderType = jToken["orderType"].ToString();
+                string businessesId = jToken["businessesId"].ToString();
+                string orderNo = jToken["orderNo"].ToString();
+
+                List<Dictionary<string, string>> roadList = JsonHelper.JsonToListDic(HttpRequestUtil.PostUrl("GetRoadByProductId", "productId=" + productId));
+                string boxId = HttpRequestUtil.PostUrl("GetBoxId", "orderId=" + orderId);
+                string com = HttpRequestUtil.PostUrl("GetCom", "boxId=" + boxId);
+                MachineModel machine = GetMachine(com);
+
+                #region 金码
+                int remainder = 0;
+                bool isSuccess = true;
+                string msg = "";
+                if (machine.Type == MachineType.金码)
+                {
+                    foreach (Dictionary<string, string> road in roadList)
+                    {
+                        for (int i = 0; i < int.Parse(productNum); i++)
+                        {
+                            int boxNo = int.Parse(HttpRequestUtil.PostUrl("GetBoxNo", "boxId=" + boxId));
+                            if (machine.Machine.Connect(out msg) && machine.Machine.Shipment(boxNo, int.Parse(road["layerNo"]), int.Parse(road["roadNo"]), false, 0, checkDrop, out msg))
+                            {
+                                bool isSucessTemp = false;
+                                string msgTemp = null;
+                                while (!machine.Machine.QueryShipment(out isSucessTemp, out remainder, false, out msgTemp))
+                                {
+                                    Thread.Sleep(50);
+                                }
+                                if (!isSuccess)
+                                {
+                                    msg += msgTemp;
+                                    isSuccess = false;
+                                    HttpRequestUtil.PostUrl("AddBreakdownAlarm", "msg=" + msg); //故障报警
+                                }
+                                else
+                                {
+                                    //更新商品出货明细
+                                    HttpRequestUtil.PostUrl("AddOrderSendDetail", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&roadId=" + road["roadId"]);
+                                    //更新每盒跟踪
+                                    HttpRequestUtil.PostUrl("UpdateRoadProduct", "roadId=" + road["roadId"]);
+                                    //更新商品批次仓库关联表
+                                    HttpRequestUtil.PostUrl("UpdateProductBatchesStore", "roadId=" + road["roadId"]);
+                                    //更新商品销售数量表
+                                    HttpRequestUtil.PostUrl("UpdateProductSaleNum", "productId=" + road["productId"]);
+                                }
+                            }
+                            else
+                            {
+                                HttpRequestUtil.PostUrl("AddBreakdownAlarm", "msg=" + msg); //故障报警
+
+                                return false;
+                            }
+                        }
+
+                        //更新货道现有商品数量
+                        HttpRequestUtil.PostUrl("UpdateCoinAndPaperCount", "roadId=" + road["roadId"] + "&sellNum=" + road["productNum"]);
+                        //商品出货记录表
+                        HttpRequestUtil.PostUrl("AddDeliveryRecord", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&shipmentNum=" + road["productNum"]);
+                    }
+                }
+                #endregion
+
+                #region 骏鹏
+                if (machine.Type == MachineType.骏鹏)
+                {
+                    foreach (Dictionary<string, string> road in roadList)
+                    {
+                        for (int i = 0; i < int.Parse(productNum); i++)
+                        {
+                            int boxNo = int.Parse(HttpRequestUtil.PostUrl("GetBoxNo", "boxId=" + boxId));
+                            byte HDID = byte.Parse(HttpRequestUtil.PostUrl("GetHDID", "boxId=" + boxId + "&layerNo=" + road["layerNo"] + "&roadNo=" + road["roadNo"]));
+                            VendoutRpt vendoutRpt = machine.MachineJP.VENDOUT_IND((byte)boxNo, 2, HDID, 1, 0);
+                            if (vendoutRpt.status == 0)
+                            {
+                                //更新商品出货明细
+                                HttpRequestUtil.PostUrl("AddOrderSendDetail", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&roadId=" + road["roadId"]);
+                                //更新每盒跟踪
+                                HttpRequestUtil.PostUrl("UpdateRoadProduct", "roadId=" + road["roadId"]);
+                                //更新商品批次仓库关联表
+                                HttpRequestUtil.PostUrl("UpdateProductBatchesStore", "roadId=" + road["roadId"]);
+                                //更新商品销售数量表
+                                HttpRequestUtil.PostUrl("UpdateProductSaleNum", "productId=" + road["productId"]);
+                            }
+                            else
+                            {
+                                HttpRequestUtil.PostUrl("AddBreakdownAlarm", "msg=出货失败"); //故障报警
+
+                                return false;
+                            }
+                        }
+
+                        //更新货道现有商品数量
+                        HttpRequestUtil.PostUrl("UpdateCoinAndPaperCount", "roadId=" + road["roadId"] + "&sellNum=" + road["productNum"]);
+                        //商品出货记录表
+                        HttpRequestUtil.PostUrl("AddDeliveryRecord", "orderId=" + orderId + "&productId=" + road["productId"] + "&boxId=" + boxId + "&shipmentNum=" + road["productNum"]);
+                    }
+                }
+                #endregion
+
+            }
+
+            return true;
+        }
+        #endregion
+
         #region 查询投币金额
         /// <summary>
         /// 查询投币金额
@@ -268,6 +514,50 @@ namespace MyWebBrowser.Utils
                 {
                     return 0;
                 }
+            }
+            #endregion
+
+            #region 金码
+            if (machine.Type == MachineType.金码)
+            {
+                int type;
+                return machine.Machine.QueryAmount(out type);
+            }
+            #endregion
+
+            return 0;
+        }
+        #endregion
+
+        #region 同步投币金额
+        /// <summary>
+        /// 同步投币金额
+        /// </summary>
+        public static int SyncAmount(string orderId)
+        {
+            string boxId = HttpRequestUtil.PostUrl("GetBoxId", "orderId=" + orderId);
+            string com = HttpRequestUtil.PostUrl("GetCom", "boxId=" + boxId);
+            MachineModel machine = GetMachine(com);
+
+            #region 骏鹏
+            if (machine.Type == MachineType.骏鹏)
+            {
+                InfoRpt_3 infoRpt_3 = machine.MachineJP.GetRemaiderAmount();
+                if (infoRpt_3 != null)
+                {
+                    return infoRpt_3.total_value;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            #endregion
+
+            #region 金码
+            if (machine.Type == MachineType.金码)
+            {
+                return machine.Machine.SyncAmount();
             }
             #endregion
 
@@ -374,16 +664,25 @@ namespace MyWebBrowser.Utils
                     List<string> roadNoList = new List<string>();
                     foreach (Dictionary<string, string> road in roadList)
                     {
-                        MachineDll.Utils.CommonUtil.CreateRoadNo(0, 0);
-                        roadNoList.Add(road[""].ToString());
+                        int floor = int.Parse(road["layerNo"].ToString());
+                        int num = int.Parse(road["sort"].ToString());
+                        string roadNo = MachineDll.Utils.CommonUtil.NumToABCD(floor) + num.ToString();
+                        roadNoList.Add(roadNo);
                     }
                     List<StatusInfoCollection> roadStatus = machine.Machine.QueryRoadInfo(int.Parse(box["boxNo"]), roadNoList);
+                    sb.AppendFormat("货道信息：\r\n");
+                    foreach (StatusInfoCollection road in roadStatus)
+                    {
+                        sb.AppendFormat("{0}\r\n", road.ToString());
+                    }
                 }
                 #endregion
 
                 #region 骏鹏
                 if (machine.Type == MachineType.骏鹏)
                 {
+                    HuoDaoRpt huoDaoRpt = machine.MachineJP.GET_HUODAO(byte.Parse(box["boxNo"]));
+                    sb.AppendFormat("货道信息：\r\n{0}\r\n", huoDaoRpt.ToString());
                 }
                 #endregion
 
