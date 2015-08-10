@@ -97,18 +97,40 @@ namespace MyWebBrowser.Utils
                     buy.Dock = DockStyle.Fill;
                     m_Form1.Controls.Add(buy);
                     buy.BringToFront();
+                    buy.lblCost.Text = "应投币" + (cost / 100.0).ToString("0.00");
+                    buy.lblAmount.Text = "已投币0";
+                    buy.lblRemainder.Text = "剩余投币" + (cost / 100.0).ToString("0.00");
                 }));
+
+                MachineFactory.OpenCoinPaper();
                 int amount = 0;
-                while ((amount = MachineFactory.QueryAmount(orderId)) == 0)
+                while ((amount = MachineFactory.SyncAmount()) < cost)
                 {
+                    InvokeUtil.Invoke(m_WebBrowser, new InvokeDelegate(delegate()
+                    {
+                        buy.lblAmount.Text = "已投币" + (amount / 100.0).ToString("0.00");
+                        buy.lblRemainder.Text = "剩余投币" + ((cost - amount) / 100.0).ToString("0.00");
+                    }));
                     Thread.Sleep(100);
                 }
                 string msg = "";
                 InvokeUtil.Invoke(m_WebBrowser, new InvokeDelegate(delegate()
                 {
-                    buy.label1.Text = "已投币" + amount + "……";
+                    buy.lblAmount.Text = "已投币" + (amount / 100.0).ToString("0.00");
                 }));
                 bool bl = MachineFactory.Shipment(cost, false, orderId, out msg);
+                amount = MachineFactory.SyncAmount();
+                if (amount > 0)
+                {
+                    if (amount > 1000)
+                    {
+
+                    }
+                    else
+                    {
+                        bool bl2 = MachineFactory.RefoundMoney(amount);
+                    }
+                }
                 if (bl)
                 {
                     InvokeUtil.Invoke(m_WebBrowser, new InvokeDelegate(delegate()
@@ -122,6 +144,7 @@ namespace MyWebBrowser.Utils
                 else
                 {
                 }
+
             })).Start();
         }
         #endregion

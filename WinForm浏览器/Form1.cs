@@ -228,21 +228,5 @@ namespace MyWebBrowser
         }
         #endregion
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            new Thread(new ThreadStart(delegate()
-            {
-                string msg = "";
-                bool bl = MachineFactory.Shipment(200, false, "bc813603f04b4b09b2c1c9eca78f95b2", out msg);
-                if (bl) MessageBox.Show("出货完成");
-                //MachineFactory.Shipment(200, false, "55a805aabd254c1699dfea6e17a7e486", out msg);
-            })).Start();
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show("abc");
-        }
-
     }
 }

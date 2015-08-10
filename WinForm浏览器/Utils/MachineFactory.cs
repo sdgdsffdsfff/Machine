@@ -491,14 +491,40 @@ namespace MyWebBrowser.Utils
         }
         #endregion
 
+        #region 开纸硬币器
+        /// <summary>
+        /// 开纸硬币器
+        /// </summary>
+        public static void OpenCoinPaper()
+        {
+            string com = HttpRequestUtil.PostUrl("GetDefaultComName");
+            MachineModel machine = GetMachine(com);
+
+            #region 骏鹏
+            if (machine.Type == MachineType.骏鹏)
+            {
+
+            }
+            #endregion
+
+            #region 金码
+            if (machine.Type == MachineType.金码)
+            {
+                string msg = "";
+                machine.Machine.PaperMoneyEnable(out msg);
+                machine.Machine.CoinEnable(out msg);
+            }
+            #endregion
+        }
+        #endregion
+
         #region 查询投币金额
         /// <summary>
         /// 查询投币金额
         /// </summary>
-        public static int QueryAmount(string orderId)
+        public static int QueryAmount()
         {
-            string boxId = HttpRequestUtil.PostUrl("GetBoxId", "orderId=" + orderId);
-            string com = HttpRequestUtil.PostUrl("GetCom", "boxId=" + boxId);
+            string com = HttpRequestUtil.PostUrl("GetDefaultComName");
             MachineModel machine = GetMachine(com);
 
             #region 骏鹏
@@ -532,10 +558,9 @@ namespace MyWebBrowser.Utils
         /// <summary>
         /// 同步投币金额
         /// </summary>
-        public static int SyncAmount(string orderId)
+        public static int SyncAmount()
         {
-            string boxId = HttpRequestUtil.PostUrl("GetBoxId", "orderId=" + orderId);
-            string com = HttpRequestUtil.PostUrl("GetCom", "boxId=" + boxId);
+            string com = HttpRequestUtil.PostUrl("GetDefaultComName");
             MachineModel machine = GetMachine(com);
 
             #region 骏鹏
