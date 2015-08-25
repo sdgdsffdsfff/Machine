@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{EC167FAC-26A3-4F66-85B5-8219A9918FCF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MachineJPDll</RootNamespace>
+    <AssemblyName>MachineJPDll</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Enums\ActionSt.cs" />
+    <Compile Include="Enums\HuoDaoSt.cs" />
+    <Compile Include="Enums\PayinType.cs" />
+    <Compile Include="Enums\PayoutType.cs" />
+    <Compile Include="Models\AckNakRpt.cs" />
+    <Compile Include="Enums\CheckSt.cs" />
+    <Compile Include="Models\ActionRpt.cs" />
+    <Compile Include="Models\Cmd.cs" />
+    <Compile Include="DataReceived.cs" />
+    <Compile Include="DataSend.cs" />
+    <Compile Include="Enums\DeviceSt.cs" />
+    <Compile Include="Models\CostRpt.cs" />
+    <Compile Include="Models\HuoDaoInfo.cs" />
+    <Compile Include="Models\HuoDaoRpt.cs" />
+    <Compile Include="Models\InfoRpt_16.cs" />
+    <Compile Include="Models\InfoRpt_17.cs" />
+    <Compile Include="MachineJP.cs" />
+    <Compile Include="Models\InfoRpt_3.cs" />
+    <Compile Include="Models\MT.cs" />
+    <Compile Include="Models\PayinRpt.cs" />
+    <Compile Include="Models\PayoutRpt.cs" />
+    <Compile Include="Models\ReceiveData.cs" />
+    <Compile Include="Models\ReceiveDataCollection.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Models\StatusRpt.cs" />
+    <Compile Include="Enums\TemSt.cs" />
+    <Compile Include="Models\TemSub.cs" />
+    <Compile Include="Enums\TemSubSt.cs" />
+    <Compile Include="Utils\CommonUtil.cs" />
+    <Compile Include="Utils\EnumHelper.cs" />
+    <Compile Include="Utils\InvokeUtil.cs" />
+    <Compile Include="Utils\LogHelper.cs" />
+    <Compile Include="Models\VendoutRpt.cs" />
+    <Compile Include="Models\VmcSetup.cs" />
+    <Compile Include="Enums\VmcSt.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
