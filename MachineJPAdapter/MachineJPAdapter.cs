@@ -144,7 +144,25 @@ namespace MachineJPAdapterDll
             VendoutRpt vendoutRpt = base.VENDOUT_IND((byte)box, 2, hd_id, type, cost);
             if (vendoutRpt.status == 0)
             {
-                result.Success = true;
+                if (cash)
+                {
+                    //出货完成扣款
+                    CostRpt costRpt = base.COST_IND(0, cost, (byte)0x00);
+                    if (costRpt.value == cost)
+                    {
+                        result.Success = true;
+                    }
+                    else
+                    {
+                        result.Success = false;
+                        result.ErrorMsg = "扣款失败";
+                        FileLogger.LogError(string.Format("扣款失败,出货柜号：{0}，层：{1}，列：{2}", box, floor, num));
+                    }
+                }
+                else
+                {
+                    result.Success = true;
+                }
             }
             else
             {
@@ -202,7 +220,6 @@ namespace MachineJPAdapterDll
         #region 退币
         /// <summary>
         /// 退币
-        /// PAYOUT_IND 不会减少用户余额！
         /// </summary>
         /// <param name="amount">退币金额(单位：分)</param>
         public OperateResult RefundMoney(int amount)
@@ -213,7 +230,18 @@ namespace MachineJPAdapterDll
             int zb = amount - yb;
             PayoutRpt ybRpt = base.PAYOUT_IND(PayoutType.硬币出币, yb, (byte)0x00);
             PayoutRpt zbRpt = base.PAYOUT_IND(PayoutType.纸币出币, zb, (byte)0x00);
-            result.Success = true;
+            //由于PAYOUT_IND 不会减少用户余额，退币后扣款
+            CostRpt costRpt = base.COST_IND(0, amount, (byte)0x00);
+            if (costRpt.value == amount)
+            {
+                result.Success = true;
+            }
+            else
+            {
+                result.Success = false;
+                result.ErrorMsg = "扣款失败";
+                FileLogger.LogError(string.Format("扣款失败，金额：{0}分", amount));
+            }
 
             if (amount > 0 && ybRpt.value == 0 && zbRpt.value == 0)
             {
