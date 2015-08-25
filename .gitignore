@@ -1,6 +1,21 @@
 *.suo
-Machine/bin/
-Machine/obj/
+Common/bin/
+Common/obj/
+IMachine/bin/
+IMachine/obj/
+MachineFactory/bin/
+MachineFactory/obj/
+MachineForm/bin/
+MachineForm/obj/
+MachineJM/bin/
+MachineJM/obj/
+MachineJMAdapter/bin/
+MachineJMAdapter/obj/
 MachineJP/bin/
 MachineJP/obj/
+MachineJPAdapter/bin/
+MachineJPAdapter/obj/
+WCFServer/bin/
+WCFServer/bin/
+
 
