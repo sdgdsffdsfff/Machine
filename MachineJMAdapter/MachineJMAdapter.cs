@@ -5,7 +5,10 @@ using System.Text;
 using System.Threading;
 using IMachineDll;
 using IMachineDll.Models;
+using MachineJMAdapterDll.Models;
+using MachineJMAdapterDll.Utils;
 using MachineJMDll;
+using MachineJMDll.Models;
 
 namespace MachineJMAdapterDll
 {
@@ -242,6 +245,51 @@ namespace MachineJMAdapterDll
             }
 
             return result;
+        }
+        #endregion
+
+        #region 货机主机信息
+        /// <summary>
+        /// 货机主机信息
+        /// </summary>
+        public string MachineInfo()
+        {
+            //主板
+            StatusInfoCollection mainBoardInfo = base.QueryMainBoardInfo();
+            return mainBoardInfo.ToString();
+        }
+        #endregion
+
+        #region 货柜信息
+        /// <summary>
+        /// 货柜信息
+        /// </summary>
+        public string BoxInfo(int box)
+        {
+            StringBuilder sb = new StringBuilder();
+            //制冷压缩机/风机/照明/除雾/广告灯/工控机等设备状态
+            StatusInfoCollection equipmentsStatus = base.QueryEquipmentsStatus(box);
+            //机器设备状态
+            StatusInfoCollection boxStatus = base.QueryBoxStatus(box);
+            //制冷压缩机/照明/除雾/广告灯/工控机等设备控制策略参数
+            List<StatusInfoCollection> equipmentAll = base.QueryEquipmentAll(box);
+            sb.AppendFormat("机器设备状态：{0}\r\n", boxStatus.ToString());
+            sb.AppendFormat("制冷压缩机/风机/照明/除雾/广告灯/工控机等设备状态：{0}\r\n", equipmentsStatus.ToString());
+            sb.AppendFormat("制冷压缩机/照明/除雾/广告灯/工控机等设备控制策略参数：\r\n");
+            foreach (StatusInfoCollection item in equipmentAll)
+            {
+                sb.AppendFormat("{0}\r\n", item.ToString());
+            }
+            //货道信息
+            sb.AppendFormat("货道信息：\r\n");
+            List<RoadModel> roadList = JMBoxConfigUtil.GetRoadsConfig(box);
+            foreach (RoadModel road in roadList)
+            {
+                StatusInfoCollection roadInfo = base.QueryRoadInfo(box, road.Floor, road.Num);
+                sb.AppendFormat("{0}层{1}号货道：{2}；", road.Floor, road.Num, roadInfo.IsNormal ? "正常" : "异常");
+            }
+
+            return sb.ToString();
         }
         #endregion
 

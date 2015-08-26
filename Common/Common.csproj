@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BoxConfigUtil.cs" />
+    <Compile Include="Enums\MachineType.cs" />
     <Compile Include="FileLogger.cs" />
     <Compile Include="MachineConfigUtil.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

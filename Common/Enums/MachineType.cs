@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace MachineFactoryDll.Enums
+namespace CommonDll.Enums
 {
     /// <summary>
     /// 售货机类型

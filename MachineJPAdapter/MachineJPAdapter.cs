@@ -261,5 +261,36 @@ namespace MachineJPAdapterDll
         }
         #endregion
 
+        #region 货机主机信息
+        /// <summary>
+        /// 货机主机信息
+        /// </summary>
+        public string MachineInfo()
+        {
+            //VMC参数
+            VmcSetup vmcSetup = base.GET_SETUP();
+            //VMC状态
+            StatusRpt statusRpt = base.GET_STATUS();
+            //硬币器
+            InfoRpt_17 infoRpt_17 = base.GetCoinInfo();
+            //纸币器
+            InfoRpt_16 infoRpt_16 = base.GetPaperInfo();
+
+            return string.Format("VMC系统参数：{0}\r\nVMC状态：{1}\r\n硬币器信息：{2}\r\n纸币器信息：{3}\r\n",
+                vmcSetup.ToString(), statusRpt.ToString(), infoRpt_17.ToString(), infoRpt_16.ToString());
+        }
+        #endregion
+
+        #region 货柜信息
+        /// <summary>
+        /// 货柜信息
+        /// </summary>
+        public string BoxInfo(int box)
+        {
+            HuoDaoRpt huoDaoRpt = base.GET_HUODAO((byte)box);
+            return "货道信息：\r\n" + huoDaoRpt.ToString() + "\r\n";
+        }
+        #endregion
+
     }
 }

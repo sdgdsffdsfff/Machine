@@ -39,7 +39,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enums\MachineType.cs" />
     <Compile Include="MachineFactory.cs" />
     <Compile Include="Models\MachineModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

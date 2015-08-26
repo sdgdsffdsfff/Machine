@@ -71,6 +71,20 @@ namespace WCFServerDll
         {
             return MachineFactory.Machine.RefundMoney(amount);
         }
+        /// <summary>
+        /// 货机主机信息
+        /// </summary>
+        public string MachineInfo()
+        {
+            return MachineFactory.Machine.MachineInfo();
+        }
+        /// <summary>
+        /// 货柜信息
+        /// </summary>
+        public string BoxInfo(int box)
+        {
+            return MachineFactory.Machine.BoxInfo(box);
+        }
 
     }
 }

@@ -52,5 +52,15 @@ namespace WCFServerDll
         /// <param name="amount">退币金额(单位：分)</param>
         [OperationContract]
         OperateResult RefundMoney(int amount);
+        /// <summary>
+        /// 货机主机信息
+        /// </summary>
+        [OperationContract]
+        string MachineInfo();
+        /// <summary>
+        /// 货柜信息
+        /// </summary>
+        [OperationContract]
+        string BoxInfo(int box);
     }
 }

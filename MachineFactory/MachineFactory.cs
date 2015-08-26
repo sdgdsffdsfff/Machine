@@ -6,7 +6,7 @@ using System.Xml;
 using CommonDll;
 using IMachineDll;
 using IMachineDll.Models;
-using MachineFactoryDll.Enums;
+using CommonDll.Enums;
 using MachineFactoryDll.Models;
 using MachineJMAdapterDll;
 using MachineJPAdapterDll;

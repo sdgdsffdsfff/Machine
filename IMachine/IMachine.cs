@@ -52,5 +52,13 @@ namespace IMachineDll
         /// </summary>
         /// <param name="amount">退币金额(单位：分)</param>
         OperateResult RefundMoney(int amount);
+        /// <summary>
+        /// 货机主机信息
+        /// </summary>
+        string MachineInfo();
+        /// <summary>
+        /// 货柜信息
+        /// </summary>
+        string BoxInfo(int box);
     }
 }

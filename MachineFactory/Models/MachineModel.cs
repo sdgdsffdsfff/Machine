@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using IMachineDll;
-using MachineFactoryDll.Enums;
+using CommonDll.Enums;
 using MachineJMAdapterDll;
 using MachineJPAdapterDll;
 
