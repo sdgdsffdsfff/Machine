@@ -32,7 +32,7 @@ namespace CommonDll
 
                     if (!File.Exists(path))
                     {
-                        using (FileStream fs = new FileStream(path, FileMode.Create)) { }
+                        using (FileStream fs = new FileStream(path, FileMode.Create)) { fs.Close(); }
                     }
 
                     using (FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write))
@@ -46,6 +46,7 @@ namespace CommonDll
                             sw.WriteLine(value);
                             sw.Flush();
                         }
+                        fs.Close();
                     }
                 }
             }));

@@ -52,6 +52,7 @@ namespace CommonDll
                                 }
                             }
                         }
+                        fs.Close();
                     }
                 }
                 catch (Exception ex)

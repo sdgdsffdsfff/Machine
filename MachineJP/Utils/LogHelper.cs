@@ -43,7 +43,7 @@ namespace MachineJPDll.Utils
 
                     if (!File.Exists(path))
                     {
-                        using (FileStream fs = new FileStream(path, FileMode.Create)) { }
+                        using (FileStream fs = new FileStream(path, FileMode.Create)) { fs.Close(); }
                     }
 
                     using (FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write))
@@ -53,6 +53,7 @@ namespace MachineJPDll.Utils
                             sw.WriteLine(msg);
                             sw.Flush();
                         }
+                        fs.Close();
                     }
                 }
             })).Start();
