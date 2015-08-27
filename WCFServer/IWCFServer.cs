@@ -23,6 +23,7 @@ namespace WCFServerDll
         /// <summary>
         /// 出货
         /// </summary>
+        /// <param name="com">串口号</param>
         /// <param name="box">货柜</param>
         /// <param name="floor">货道层</param>
         /// <param name="num">货道列</param>
@@ -30,7 +31,7 @@ namespace WCFServerDll
         /// <param name="cost">金额(单位：分)</param>
         /// <param name="check">是否掉货检测</param>
         [OperationContract]
-        OperateResult Shipment(int box, int floor, int num, bool cash, int cost, bool check);
+        OperateResult Shipment(string com, int box, int floor, int num, bool cash, int cost, bool check);
         /// <summary>
         /// 查询投币金额
         /// </summary>

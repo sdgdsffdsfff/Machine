@@ -30,15 +30,15 @@ namespace WCFServerDll
         /// <summary>
         /// 出货
         /// </summary>
+        /// <param name="com">串口号</param>
         /// <param name="box">货柜</param>
         /// <param name="floor">货道层</param>
         /// <param name="num">货道列</param>
         /// <param name="cash">是否现金支付</param>
         /// <param name="cost">金额(单位：分)</param>
         /// <param name="check">是否掉货检测</param>
-        public OperateResult Shipment(int box, int floor, int num, bool cash, int cost, bool check)
+        public OperateResult Shipment(string com, int box, int floor, int num, bool cash, int cost, bool check)
         {
-            string com = MachineConfigUtil.GetComByBox(box);
             IMachine machine = MachineFactory.GetMachine(com);
             return machine.Shipment(box, floor, num, cash, cost, check);
         }
