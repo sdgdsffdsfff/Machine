@@ -68,6 +68,7 @@ namespace WCFServerDll
         /// <summary>
         /// 查询单个货道信息
         /// </summary>
+        [OperationContract]
         RoadRpt QueryRoadRpt(string com, int box, int floor, int num);
     }
 }
