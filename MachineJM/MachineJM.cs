@@ -26,6 +26,7 @@ namespace MachineJMDll
             serialPort = new SerialPort(com, 9600, Parity.None, 8, StopBits.One);
             serialPort.ReadBufferSize = 1024;
             serialPort.WriteBufferSize = 1024;
+            serialPort.Open();
         }
         #endregion
 
@@ -40,7 +41,7 @@ namespace MachineJMDll
             lock (_lock)
             {
                 //打开连接
-                if (!serialPort.IsOpen) serialPort.Open();
+                //if (!serialPort.IsOpen) serialPort.Open();
 
                 //发送数据
                 serialPort.Write(sendData, 0, sendData.Length);
@@ -73,7 +74,7 @@ namespace MachineJMDll
                 }
 
                 //关闭连接
-                if (serialPort.IsOpen) serialPort.Close();
+                //if (serialPort.IsOpen) serialPort.Close();
 
                 return recList.ToArray();
             }
@@ -935,7 +936,7 @@ namespace MachineJMDll
         /// <summary>
         /// 查询控制主板信息
         /// </summary>
-        public StatusInfoCollection QueryMainBoardInfo()
+        public MainBoardInfo QueryMainBoardInfo()
         {
             string msg = null;
             byte[] sendData = new byte[] { 0x01, 0x01, 0x20, 0x00 };
@@ -948,12 +949,9 @@ namespace MachineJMDll
                 && recData[2] == 0x20
                 && CommonUtil.ValidCheckCode(recData))
             {
-                StatusInfoCollection result = new StatusInfoCollection();
-                result.Name = "控制主板信息";
-                List<StatusInfo> statusInfoList = new List<StatusInfo>();
-                StatusInfo statusInfo = null;
+                MainBoardInfo mainBoardInfo = new Models.MainBoardInfo();
 
-                //控制主版本时间
+                //控制主板协议版本号
                 StringBuilder sbVersion = new StringBuilder();
                 for (int i = 3; i <= 4; i++)
                 {
@@ -964,15 +962,11 @@ namespace MachineJMDll
                     }
                     else
                     {
-                        throw new Exception("获取控制主版本时间出错");
+                        throw new Exception("获取控制主板协议版本号出错");
                     }
                     if (i == 3) sbVersion.Append(".");
                 }
-                statusInfo = new StatusInfo();
-                statusInfo.IsNormal = true;
-                statusInfo.Title = "控制主板协议版本号";
-                statusInfo.Content = sbVersion.ToString();
-                statusInfoList.Add(statusInfo);
+                mainBoardInfo.Version = sbVersion.ToString();
 
                 //控制主版时间
                 StringBuilder sbTime = new StringBuilder();
@@ -980,11 +974,7 @@ namespace MachineJMDll
                 {
                     sbTime.Append(recData[i].ToString("x2"));
                 }
-                statusInfo = new StatusInfo();
-                statusInfo.IsNormal = true;
-                statusInfo.Title = "控制主版时间";
-                statusInfo.Content = sbTime.ToString();
-                statusInfoList.Add(statusInfo);
+                mainBoardInfo.Time = sbTime.ToString();
 
                 //控制主板序列号
                 StringBuilder sbSerialNumber = new StringBuilder();
@@ -992,11 +982,7 @@ namespace MachineJMDll
                 {
                     sbSerialNumber.Append(recData[i].ToString("x2").Substring(1, 1));
                 }
-                statusInfo = new StatusInfo();
-                statusInfo.IsNormal = true;
-                statusInfo.Title = "控制主板序列号";
-                statusInfo.Content = sbSerialNumber.ToString();
-                statusInfoList.Add(statusInfo);
+                mainBoardInfo.SerialNumber = sbSerialNumber.ToString();
 
                 //控制主板软件版本号
                 StringBuilder sbSoftVersion = new StringBuilder();
@@ -1004,16 +990,9 @@ namespace MachineJMDll
                 {
                     sbSoftVersion.Append((char)recData[i]);
                 }
-                statusInfo = new StatusInfo();
-                statusInfo.IsNormal = true;
-                statusInfo.Title = "控制主板软件版本号";
-                statusInfo.Content = sbSoftVersion.ToString();
-                statusInfoList.Add(statusInfo);
+                mainBoardInfo.SoftVersion = sbSoftVersion.ToString();
 
-                result.IsNormal = true;
-                result.List = statusInfoList;
-                result.Msg = "正常";
-                return result;
+                return mainBoardInfo;
             }
             else if (IsRunning(recData, out msg) || !IsConnected(recData, out msg))
             {
@@ -1133,12 +1112,12 @@ namespace MachineJMDll
         /// <param name="floor">货道层</param>
         /// <param name="num">货道号</param>
         /// <returns>货道状态</returns>
-        public StatusInfoCollection QueryRoadInfo(int boxNo, int floor, int num)
+        public RoadInfo QueryRoadInfo(int boxNo, int floor, int num)
         {
             string msg = null;
-            StatusInfoCollection result = new StatusInfoCollection();
-            result.Name = "货道" + CommonUtil.NumToABCD(floor) + num + "信息";
-            List<StatusInfo> statusInfoList = new List<StatusInfo>();
+            RoadInfo roadInfo = new RoadInfo();
+            roadInfo.Floor = floor;
+            roadInfo.Num = num;
             byte roadNo = CommonUtil.CreateRoadNo(floor, num);
             List<byte> sendData = new List<byte>() { 0x01, 0x03, 0x01, (byte)boxNo, roadNo, 0x00 };
             CommonUtil.CalCheckCode(sendData);
@@ -1151,40 +1130,27 @@ namespace MachineJMDll
                 && CommonUtil.ValidCheckCode(recData))
             {
                 string roadStatus = EnumHelper.GetDescriptionByVal(typeof(RoadStatus), recData[5]);
-                StatusInfo statusInfo = new StatusInfo();
                 if (recData[5] == 2)
                 {
-                    statusInfo.IsNormal = true;
+                    roadInfo.IsOK = true;
                 }
                 else
                 {
-                    statusInfo.IsNormal = false;
+                    roadInfo.IsOK = false;
                 }
-                statusInfo.Title = "货道状态";
-                statusInfo.Content = roadStatus;
-                statusInfoList.Add(statusInfo);
+                roadInfo.ErrorMsg = roadStatus;
 
                 if (recData[5] == 2)
                 {
                     int roadCost = CommonUtil.ByteArray2Int(new byte[] { recData[6], recData[7], recData[8], recData[9] });
-                    statusInfo = new StatusInfo();
-                    statusInfo.IsNormal = true;
-                    statusInfo.Title = "货道价格";
-                    statusInfo.Content = (roadCost / 100.0).ToString("0.00") + "元";
-                    statusInfoList.Add(statusInfo);
+                    roadInfo.Price = roadCost;
                 }
 
-                result.IsNormal = true;
-                result.List = statusInfoList;
-                result.Msg = "正常";
-                return result;
+                return roadInfo;
             }
             else if (IsRunning(recData, out msg) || !IsConnected(recData, out msg))
             {
-                result.IsNormal = false;
-                result.List = statusInfoList;
-                result.Msg = msg;
-                return result;
+                throw new Exception("货机正在执行操作，请稍后检测");
             }
             else
             {
@@ -1200,9 +1166,9 @@ namespace MachineJMDll
         /// <param name="boxNo">机柜编号</param>
         /// <param name="roadNoList">货道编号集合，货道编号例：B12</param>
         /// <returns>货道集合的状态集合</returns>
-        public List<StatusInfoCollection> QueryRoadInfo(int boxNo, List<string> roadNoList)
+        public List<RoadInfo> QueryRoadInfo(int boxNo, List<string> roadNoList)
         {
-            List<StatusInfoCollection> result = new List<StatusInfoCollection>();
+            List<RoadInfo> result = new List<RoadInfo>();
             int floor = 0;
             int num = 0;
 
@@ -1218,24 +1184,8 @@ namespace MachineJMDll
                     throw new Exception("货道编号格式不正确");
                 }
 
-                StatusInfoCollection statusInfoCollection = new StatusInfoCollection();
-                StatusInfoCollection child = QueryRoadInfo(boxNo, floor, num);
-                if (child.IsNormal)
-                {
-                    statusInfoCollection.Name = roadNo;
-                    statusInfoCollection.IsNormal = true;
-                    statusInfoCollection.List = child.List;
-                    statusInfoCollection.Msg = "正常";
-                    result.Add(statusInfoCollection);
-                }
-                else
-                {
-                    statusInfoCollection.Name = roadNo;
-                    statusInfoCollection.IsNormal = false;
-                    statusInfoCollection.List = child.List;
-                    statusInfoCollection.Msg = child.Msg;
-                    result.Add(statusInfoCollection);
-                }
+                RoadInfo roadInfo = QueryRoadInfo(boxNo, floor, num);
+                result.Add(roadInfo);
             }
 
             return result;
@@ -1346,13 +1296,11 @@ namespace MachineJMDll
         /// </summary>
         /// <param name="boxNo">机柜编号</param>
         /// <returns>机器状态集合</returns>
-        public StatusInfoCollection QueryBoxStatus(int boxNo)
+        public BoxStatus QueryBoxStatus(int boxNo)
         {
             string msg = null;
 
-            StatusInfoCollection result = new StatusInfoCollection();
-            result.Name = "机器设备状态";
-            List<StatusInfo> statusInfoList = new List<StatusInfo>();
+            BoxStatus boxStatus = new BoxStatus();
             List<byte> sendData = new List<byte>() { 0x01, 0x02, 0x10, (byte)boxNo, 0x00 };
             CommonUtil.CalCheckCode(sendData);
             byte[] recData = ReadPort(sendData.ToArray());
@@ -1367,20 +1315,15 @@ namespace MachineJMDll
                 {
                     case 0x00:
                         #region 驱动板状态
-                        StatusInfo statusInfo = new StatusInfo();
                         switch (recData[4])
                         {
                             case 0x01:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "驱动板状态";
-                                statusInfo.Content = "故障(驱动板没有连接)";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.驱动板状态.IsOK = false;
+                                boxStatus.驱动板状态.Msg = "故障(驱动板没有连接)";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "驱动板状态";
-                                statusInfo.Content = "正常";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.驱动板状态.IsOK = true;
+                                boxStatus.驱动板状态.Msg = "正常";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1388,26 +1331,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 温度传感器状态
-                        statusInfo = new StatusInfo();
                         switch (recData[5])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "温度传感器状态";
-                                statusInfo.Content = "检测到温度值，温度值有效";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.温度传感器状态.IsOK = true;
+                                boxStatus.温度传感器状态.Msg = "检测到温度值，温度值有效";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "温度传感器状态";
-                                statusInfo.Content = "温度检测超范围，温度值无效";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.温度传感器状态.IsOK = false;
+                                boxStatus.温度传感器状态.Msg = "温度检测超范围，温度值无效";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "温度传感器状态";
-                                statusInfo.Content = "线路不通或未接温度传感器，温度值无效";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.温度传感器状态.IsOK = false;
+                                boxStatus.温度传感器状态.Msg = "线路不通或未接温度传感器，温度值无效";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1415,36 +1351,25 @@ namespace MachineJMDll
                         #endregion
 
                         #region 当前温度值
-                        statusInfo = new StatusInfo();
-                        statusInfo.IsNormal = true;
-                        statusInfo.Title = "当前温度值";
-                        statusInfo.Content = (recData[6] >= 128 ? -recData[6] % 128 : recData[6]).ToString() + "℃";
-                        statusInfoList.Add(statusInfo);
+                        boxStatus.当前温度值.IsOK = true;
+                        boxStatus.当前温度值.Msg = (recData[6] >= 128 ? -recData[6] % 128 : recData[6]).ToString() + "℃";
                         #endregion
 
                         #region 目标温度值
-                        statusInfo = new StatusInfo();
-                        statusInfo.IsNormal = true;
-                        statusInfo.Title = "目标温度值";
-                        statusInfo.Content = (recData[7] % 128).ToString() + "℃";
-                        statusInfoList.Add(statusInfo);
+                        boxStatus.目标温度值.IsOK = true;
+                        boxStatus.目标温度值.Msg = (recData[7] % 128).ToString() + "℃";
                         #endregion
 
                         #region 门碰开关状态
-                        statusInfo = new StatusInfo();
                         switch (recData[8])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "门碰开关状态";
-                                statusInfo.Content = "门控开关合上，表示关门";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.门碰开关状态.IsOK = false;
+                                boxStatus.门碰开关状态.Msg = "门控开关合上，表示关门";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "门碰开关状态";
-                                statusInfo.Content = "门控开关打开，表示开门";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.门碰开关状态.IsOK = true;
+                                boxStatus.门碰开关状态.Msg = "门控开关打开，表示开门";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1452,32 +1377,23 @@ namespace MachineJMDll
                         #endregion
 
                         #region 掉货检测设备状态
-                        statusInfo = new StatusInfo();
                         switch (recData[9])
                         {
                             case 0x01:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "掉货检测设备状态";
-                                statusInfo.Content = "故障";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.掉货检测设备状态.IsOK = false;
+                                boxStatus.掉货检测设备状态.Msg = "故障";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "掉货检测设备状态";
-                                statusInfo.Content = "正常，中间没隔断";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.掉货检测设备状态.IsOK = true;
+                                boxStatus.掉货检测设备状态.Msg = "正常，中间没隔断";
                                 break;
                             case 0x03:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "掉货检测设备状态";
-                                statusInfo.Content = "被遮挡（有隔断）";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.掉货检测设备状态.IsOK = false;
+                                boxStatus.掉货检测设备状态.Msg = "被遮挡（有隔断）";
                                 break;
                             case 0xFF:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "掉货检测设备状态";
-                                statusInfo.Content = "设备没安装（无连接）";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.掉货检测设备状态.IsOK = false;
+                                boxStatus.掉货检测设备状态.Msg = "设备没安装（无连接）";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1485,26 +1401,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 网络设备状态
-                        statusInfo = new StatusInfo();
                         switch (recData[10])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "网络设备状态";
-                                statusInfo.Content = "离线";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.网络设备状态.IsOK = false;
+                                boxStatus.网络设备状态.Msg = "离线";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "网络设备状态";
-                                statusInfo.Content = "联机";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.网络设备状态.IsOK = true;
+                                boxStatus.网络设备状态.Msg = "联机";
                                 break;
                             case 0xFF:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "网络设备状态";
-                                statusInfo.Content = "不存在网络设备或不具有网络功能";
-                                statusInfoList.Add(statusInfo);
+                                boxStatus.网络设备状态.IsOK = false;
+                                boxStatus.网络设备状态.Msg = "不存在网络设备或不具有网络功能";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1512,32 +1421,20 @@ namespace MachineJMDll
                         #endregion
 
                         #region 网络待发数据数量
-                        statusInfo = new StatusInfo();
-                        statusInfo.IsNormal = true;
-                        statusInfo.Title = "网络待发数据数量";
-                        statusInfo.Content = CommonUtil.ByteArray2Int(new byte[] { recData[11], recData[12] }).ToString();
-                        statusInfoList.Add(statusInfo);
+                        boxStatus.网络待发数据数量.IsOK = true;
+                        boxStatus.网络待发数据数量.Msg = CommonUtil.ByteArray2Int(new byte[] { recData[11], recData[12] }).ToString();
                         #endregion
 
-                        result.IsNormal = true;
-                        result.Msg = "成功";
-                        result.List = statusInfoList;
-                        return result;
+                        return boxStatus;
                     case 0x01:
-                        result.IsNormal = false;
-                        result.Msg = "不存在该机柜编号";
-                        result.List = statusInfoList;
-                        return result;
+                        throw new Exception("不存在该机柜编号");
                     default:
                         throw new Exception("未知状态");
                 }
             }
             else if (IsRunning(recData, out msg) || !IsConnected(recData, out msg))
             {
-                result.IsNormal = false;
-                result.Msg = msg;
-                result.List = statusInfoList;
-                return result;
+                throw new Exception("货机正在执行操作，请稍后检测");
             }
             else
             {
@@ -1552,12 +1449,10 @@ namespace MachineJMDll
         /// </summary>
         /// <param name="boxNo">机柜编号</param>
         /// <returns>设备状态集合</returns>
-        public StatusInfoCollection QueryEquipmentsStatus(int boxNo)
+        public EquipmentsStatus QueryEquipmentsStatus(int boxNo)
         {
             string msg = null;
-            StatusInfoCollection result = new StatusInfoCollection();
-            result.Name = "制冷压缩机/风机/照明/除雾/广告灯/工控机等设备状态";
-            List<StatusInfo> statusInfoList = new List<StatusInfo>();
+            EquipmentsStatus equipmentsStatus = new EquipmentsStatus();
             List<byte> sendData = new List<byte>() { 0x01, 0x02, 0x11, (byte)boxNo, 0x00 };
             CommonUtil.CalCheckCode(sendData);
             byte[] recData = ReadPort(sendData.ToArray());
@@ -1572,26 +1467,19 @@ namespace MachineJMDll
                 {
                     case 0x00:
                         #region 制冷设备状态
-                        StatusInfo statusInfo = new StatusInfo();
                         switch (recData[4])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "制冷设备状态";
-                                statusInfo.Content = "制冷压缩机关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.制冷设备状态.IsOK = false;
+                                equipmentsStatus.制冷设备状态.Msg = "制冷压缩机关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "制冷设备状态";
-                                statusInfo.Content = "制冷压缩机打开时间，以分钟为单位";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.制冷设备状态.IsOK = true;
+                                equipmentsStatus.制冷设备状态.Msg = "制冷压缩机打开时间，以分钟为单位";
                                 break;
                             case 0xFF:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "制冷设备状态";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.制冷设备状态.IsOK = false;
+                                equipmentsStatus.制冷设备状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1599,26 +1487,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 风机状态
-                        statusInfo = new StatusInfo();
                         switch (recData[5])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "风机状态";
-                                statusInfo.Content = "风机关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.风机状态.IsOK = false;
+                                equipmentsStatus.风机状态.Msg = "风机关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "风机状态";
-                                statusInfo.Content = "风机打开";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.风机状态.IsOK = true;
+                                equipmentsStatus.风机状态.Msg = "风机打开";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "风机状态";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.风机状态.IsOK = false;
+                                equipmentsStatus.风机状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1626,26 +1507,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 照明灯状态
-                        statusInfo = new StatusInfo();
                         switch (recData[6])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "照明灯状态";
-                                statusInfo.Content = "照明灯关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.照明灯状态.IsOK = false;
+                                equipmentsStatus.照明灯状态.Msg = "照明灯关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "照明灯状态";
-                                statusInfo.Content = "照明灯打开";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.照明灯状态.IsOK = true;
+                                equipmentsStatus.照明灯状态.Msg = "照明灯打开";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "照明灯状态";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.照明灯状态.IsOK = false;
+                                equipmentsStatus.照明灯状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1653,26 +1527,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 除雾器状态
-                        statusInfo = new StatusInfo();
                         switch (recData[7])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "除雾器关闭";
-                                statusInfo.Content = "除雾器关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.除雾器状态.IsOK = false;
+                                equipmentsStatus.除雾器状态.Msg = "除雾器关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "除雾器关闭";
-                                statusInfo.Content = "除雾器打开";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.除雾器状态.IsOK = true;
+                                equipmentsStatus.除雾器状态.Msg = "除雾器打开";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "除雾器关闭";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.除雾器状态.IsOK = false;
+                                equipmentsStatus.除雾器状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1680,26 +1547,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 广告灯状态
-                        statusInfo = new StatusInfo();
                         switch (recData[8])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "广告灯状态";
-                                statusInfo.Content = "广告灯关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.广告灯状态.IsOK = false;
+                                equipmentsStatus.广告灯状态.Msg = "广告灯关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "广告灯状态";
-                                statusInfo.Content = "广告灯打开";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.广告灯状态.IsOK = true;
+                                equipmentsStatus.广告灯状态.Msg = "广告灯打开";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "广告灯状态";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.广告灯状态.IsOK = false;
+                                equipmentsStatus.广告灯状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1707,26 +1567,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 工控机/显示器/机箱风扇状态
-                        statusInfo = new StatusInfo();
                         switch (recData[9])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "工控机/显示器/机箱风扇状态";
-                                statusInfo.Content = "设备关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.工控机显示器机箱风扇状态.IsOK = false;
+                                equipmentsStatus.工控机显示器机箱风扇状态.Msg = "设备关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "工控机/显示器/机箱风扇状态";
-                                statusInfo.Content = "设备打开";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.工控机显示器机箱风扇状态.IsOK = true;
+                                equipmentsStatus.工控机显示器机箱风扇状态.Msg = "设备打开";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "工控机/显示器/机箱风扇状态";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.工控机显示器机箱风扇状态.IsOK = false;
+                                equipmentsStatus.工控机显示器机箱风扇状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1734,26 +1587,19 @@ namespace MachineJMDll
                         #endregion
 
                         #region 预留设备1状态
-                        statusInfo = new StatusInfo();
                         switch (recData[10])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "预留设备1状态";
-                                statusInfo.Content = "预留设备1关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.预留设备1状态.IsOK = false;
+                                equipmentsStatus.预留设备1状态.Msg = "预留设备1关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "预留设备1状态";
-                                statusInfo.Content = "预留设备1打开";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.预留设备1状态.IsOK = true;
+                                equipmentsStatus.预留设备1状态.Msg = "预留设备1打开";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "预留设备1状态";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.预留设备1状态.IsOK = false;
+                                equipmentsStatus.预留设备1状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -1761,40 +1607,27 @@ namespace MachineJMDll
                         #endregion
 
                         #region 预留设备2状态
-                        statusInfo = new StatusInfo();
                         switch (recData[11])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "预留设备2状态";
-                                statusInfo.Content = "预留设备2关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.预留设备2状态.IsOK = false;
+                                equipmentsStatus.预留设备2状态.Msg = "预留设备2关闭";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "预留设备2状态";
-                                statusInfo.Content = "预留设备2打开";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.预留设备2状态.IsOK = true;
+                                equipmentsStatus.预留设备2状态.Msg = "预留设备2打开";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "预留设备2状态";
-                                statusInfo.Content = "不存在该控制回路";
-                                statusInfoList.Add(statusInfo);
+                                equipmentsStatus.预留设备2状态.IsOK = false;
+                                equipmentsStatus.预留设备2状态.Msg = "不存在该控制回路";
                                 break;
                             default:
                                 throw new Exception("未知状态");
                         }
                         #endregion
-
-                        result.IsNormal = true;
-                        result.Msg = "成功";
-                        result.List = statusInfoList;
                         break;
                     case 0x01:
-                        result.IsNormal = false;
-                        result.Msg = "不存在该机柜编号";
-                        result.List = statusInfoList;
+                        throw new Exception("不存在该机柜编号");
                         break;
                     default:
                         throw new Exception("未知状态");
@@ -1802,16 +1635,14 @@ namespace MachineJMDll
             }
             else if (IsRunning(recData, out msg) || !IsConnected(recData, out msg))
             {
-                result.IsNormal = false;
-                result.Msg = msg;
-                result.List = statusInfoList;
+                throw new Exception("货机正在执行操作，请稍后检测");
             }
             else
             {
                 throw new Exception("货机返回的数据格式不正确");
             }
 
-            return result;
+            return equipmentsStatus;
         }
         #endregion
 
@@ -1925,40 +1756,11 @@ namespace MachineJMDll
         /// <param name="boxNo">机柜编号</param>
         /// <param name="equipmentType">设备类型(0：制冷压缩机， 2：照明设备， 3：除雾设备， 4：广告灯， 5：工控机/显示器/机箱风扇， 6：预留设备1， 7：预留设备2)</param>
         /// <returns>策略参数集合</returns>
-        public StatusInfoCollection QueryEquipment(int boxNo, int equipmentType)
+        public EquipmentParameter QueryEquipment(int boxNo, int equipmentType)
         {
             string msg = null;
-            StatusInfoCollection result = new StatusInfoCollection();
-            switch (equipmentType)
-            {
-                #region case
-                case 0:
-                    result.Name = "制冷压缩机";
-                    break;
-                case 2:
-                    result.Name = "照明设备";
-                    break;
-                case 3:
-                    result.Name = "除雾设备";
-                    break;
-                case 4:
-                    result.Name = "广告灯";
-                    break;
-                case 5:
-                    result.Name = "工控机/显示器/机箱风扇";
-                    break;
-                case 6:
-                    result.Name = "预留设备1";
-                    break;
-                case 7:
-                    result.Name = "预留设备2";
-                    break;
-                default:
-                    throw new Exception("不存在的设备类型");
-                #endregion
-            }
 
-            List<StatusInfo> statusInfoList = new List<StatusInfo>();
+            EquipmentParameter equipmentParameter = new EquipmentParameter();
             List<byte> sendData = new List<byte>() { 0x01, 0x03, 0x15, (byte)boxNo, (byte)equipmentType, 0x00 };
             CommonUtil.CalCheckCode(sendData);
             byte[] recData = ReadPort(sendData.ToArray());
@@ -1973,34 +1775,20 @@ namespace MachineJMDll
                 {
                     case 0x00:
                         #region 目标温度值
-                        StatusInfo statusInfo = new StatusInfo();
-                        statusInfo.IsNormal = true;
-                        statusInfo.Title = "目标温度值";
-                        statusInfo.Content = (recData[4] >= 128 ? -recData[4] % 128 : recData[4]).ToString() + "℃";
-                        statusInfoList.Add(statusInfo);
+                        equipmentParameter.目标温度值 = (recData[4] >= 128 ? -recData[4] % 128 : recData[4]).ToString() + "℃";
                         #endregion
 
                         #region 控制模式
-                        statusInfo = new StatusInfo();
                         switch (recData[5])
                         {
                             case 0x00:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "控制模式";
-                                statusInfo.Content = "定时开启";
-                                statusInfoList.Add(statusInfo);
+                                equipmentParameter.控制模式 = "定时开启";
                                 break;
                             case 0x01:
-                                statusInfo.IsNormal = true;
-                                statusInfo.Title = "控制模式";
-                                statusInfo.Content = "全时段开启";
-                                statusInfoList.Add(statusInfo);
+                                equipmentParameter.控制模式 = "全时段开启";
                                 break;
                             case 0x02:
-                                statusInfo.IsNormal = false;
-                                statusInfo.Title = "控制模式";
-                                statusInfo.Content = "全时段关闭";
-                                statusInfoList.Add(statusInfo);
+                                equipmentParameter.控制模式 = "全时段关闭";
                                 break;
                             default:
                                 throw new Exception("未知状态");
@@ -2010,60 +1798,45 @@ namespace MachineJMDll
                         #region 定时时间段1
                         if (recData[5] == 0) //定时开启
                         {
-                            statusInfo = new StatusInfo();
-                            statusInfo.IsNormal = true;
-                            statusInfo.Title = "定时时间段1";
-                            statusInfo.Content = recData[6].ToString() + ":" + recData[7].ToString("00") + "-"
+                            equipmentParameter.定时时间段1 = recData[6].ToString() + ":" + recData[7].ToString("00") + "-"
                                 + recData[8].ToString() + ":" + recData[9].ToString("00");
-                            statusInfoList.Add(statusInfo);
                         }
                         #endregion
 
                         #region 定时时间段2
                         if (recData[5] == 0) //定时开启
                         {
-                            statusInfo = new StatusInfo();
-                            statusInfo.IsNormal = true;
-                            statusInfo.Title = "定时时间段2";
-                            statusInfo.Content = recData[10].ToString() + ":" + recData[11].ToString("00") + "-"
+                            equipmentParameter.定时时间段2 = recData[10].ToString() + ":" + recData[11].ToString("00") + "-"
                                 + recData[12].ToString() + ":" + recData[13].ToString("00");
-                            statusInfoList.Add(statusInfo);
                         }
                         #endregion
 
-                        result.IsNormal = true;
-                        result.Msg = "成功";
-                        result.List = statusInfoList;
+                        equipmentParameter.IsOK = true;
                         break;
                     case 0x01:
-                        result.IsNormal = false;
-                        result.Msg = "不存在该机柜编号";
-                        result.List = statusInfoList;
+                        equipmentParameter.IsOK = false;
+                        equipmentParameter.ErrorMsg = "不存在该机柜编号";
                         break;
                     case 0x03:
-                        result.IsNormal = false;
-                        result.Msg = "不存在控制回路";
-                        result.List = statusInfoList;
+                        equipmentParameter.IsOK = false;
+                        equipmentParameter.ErrorMsg = "不存在控制回路";
                         break;
                     default:
-                        result.IsNormal = false;
-                        result.Msg = "未知状态";
-                        result.List = statusInfoList;
+                        equipmentParameter.IsOK = false;
+                        equipmentParameter.ErrorMsg = "未知状态";
                         break;
                 }
             }
             else if (IsRunning(recData, out msg) || !IsConnected(recData, out msg))
             {
-                result.IsNormal = false;
-                result.Msg = msg;
-                result.List = statusInfoList;
+                throw new Exception("货机正在执行操作，请稍后检测");
             }
             else
             {
                 throw new Exception("货机返回的数据格式不正确");
             }
 
-            return result;
+            return equipmentParameter;
         }
         #endregion
 
@@ -2073,41 +1846,19 @@ namespace MachineJMDll
         /// </summary>
         /// <param name="boxNo">机柜编号</param>
         /// <returns>策略参数集合</returns>
-        public List<StatusInfoCollection> QueryEquipmentAll(int boxNo)
+        public EquipmentInfo QueryEquipmentAll(int boxNo)
         {
-            Dictionary<string, int> dicEquipmentType = new Dictionary<string, int>();
-            dicEquipmentType.Add("制冷压缩机", 0);
-            dicEquipmentType.Add("照明设备", 2);
-            dicEquipmentType.Add("除雾设备", 3);
-            dicEquipmentType.Add("广告灯", 4);
-            dicEquipmentType.Add("工控机/显示器/机箱风扇", 5);
-            dicEquipmentType.Add("预留设备1", 6);
-            dicEquipmentType.Add("预留设备2", 7);
+            EquipmentInfo equipmentInfo = new EquipmentInfo();
 
-            List<StatusInfoCollection> result = new List<StatusInfoCollection>();
-            foreach (string key in dicEquipmentType.Keys)
-            {
-                StatusInfoCollection statusInfoCollection = new StatusInfoCollection();
-                StatusInfoCollection child = QueryEquipment(boxNo, dicEquipmentType[key]);
-                if (child.IsNormal)
-                {
-                    statusInfoCollection.Name = key;
-                    statusInfoCollection.IsNormal = true;
-                    statusInfoCollection.List = child.List;
-                    statusInfoCollection.Msg = "正常";
-                    result.Add(statusInfoCollection);
-                }
-                else
-                {
-                    statusInfoCollection.Name = key;
-                    statusInfoCollection.IsNormal = false;
-                    statusInfoCollection.List = child.List;
-                    statusInfoCollection.Msg = child.Msg;
-                    result.Add(statusInfoCollection);
-                }
-            }
+            equipmentInfo.制冷压缩机 = QueryEquipment(boxNo, 0);
+            equipmentInfo.照明设备 = QueryEquipment(boxNo, 2);
+            equipmentInfo.除雾设备 = QueryEquipment(boxNo, 3);
+            equipmentInfo.广告灯 = QueryEquipment(boxNo, 4);
+            equipmentInfo.工控机显示器机箱风扇 = QueryEquipment(boxNo, 5);
+            equipmentInfo.预留设备1 = QueryEquipment(boxNo, 6);
+            equipmentInfo.预留设备2 = QueryEquipment(boxNo, 7);
 
-            return result;
+            return equipmentInfo;
         }
         #endregion
 

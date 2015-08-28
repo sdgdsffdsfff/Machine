@@ -18,9 +18,9 @@ namespace MachineJMAdapterDll.Utils
         /// 获取货道配置
         /// </summary>
         /// <returns></returns>
-        public static List<RoadModel> GetRoadsConfig(int box)
+        public static RoadModelCollection GetRoadsConfig(int box)
         {
-            List<RoadModel> roadList = new List<RoadModel>();
+            RoadModelCollection roadModelCollection = new RoadModelCollection();
 
             List<string> list = BoxConfigUtil.GetConfig(MachineType.金码, box);
             int start = list.FindIndex(item => item.Trim() == "[roads]") + 1;
@@ -40,13 +40,14 @@ namespace MachineJMAdapterDll.Utils
                     RoadModel road = new RoadModel();
                     road.Floor = floor;
                     road.Num = int.Parse(strroad);
-                    roadList.Add(road);
+                    roadModelCollection.RoadList.Add(road);
                 }
 
                 floor++;
             }
 
-            return roadList;
+            roadModelCollection.FloorCount = floor - 1;
+            return roadModelCollection;
         }
         #endregion
 

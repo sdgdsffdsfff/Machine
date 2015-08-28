@@ -71,17 +71,26 @@ namespace MachineForm
 
         private void button1_Click(object sender, EventArgs e)
         {
-            string com = "COM1";
-            IMachine machine = MachineFactory.GetMachine(com);
-            OperateResult result = machine.Shipment(1, 3, 5, true, 100, false);
-            if (result.Success)
+            AmountRpt amountRpt = MachineFactory.Machine.QueryAmount();
+            if (amountRpt != null)
             {
-                MessageBox.Show("成功");
+                MessageBox.Show(amountRpt.Amount.ToString());
             }
             else
             {
-                MessageBox.Show(result.ErrorMsg);
+                MessageBox.Show("无");
             }
+            //string com = "COM3";
+            //IMachine machine = MachineFactory.GetMachine(com);
+            //OperateResult result = machine.Shipment(1, 2, 3, false, 0, false);
+            //if (result.Success)
+            //{
+            //    MessageBox.Show("成功");
+            //}
+            //else
+            //{
+            //    MessageBox.Show(result.ErrorMsg);
+            //}
             //machine.RefundMoney(100);
             //machine.ClearAmount();
         }

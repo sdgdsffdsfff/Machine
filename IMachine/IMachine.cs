@@ -55,10 +55,14 @@ namespace IMachineDll
         /// <summary>
         /// 货机主机信息
         /// </summary>
-        string MachineInfo();
+        MachineRpt MachineInfo();
         /// <summary>
         /// 货柜信息
         /// </summary>
-        string BoxInfo(int box);
+        BoxRpt BoxInfo(int box);
+        /// <summary>
+        /// 查询单个货道信息
+        /// </summary>
+        RoadRpt QueryRoadRpt(int box, int floor, int num);
     }
 }

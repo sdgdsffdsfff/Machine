@@ -9,6 +9,7 @@ using IMachineDll.Models;
 using MachineJPDll;
 using MachineJPDll.Enums;
 using MachineJPDll.Models;
+using MachineJPDll.Utils;
 
 namespace MachineJPAdapterDll
 {
@@ -22,6 +23,10 @@ namespace MachineJPAdapterDll
         /// 串口号
         /// </summary>
         private string m_com;
+        /// <summary>
+        /// 货道信息缓存
+        /// </summary>
+        private static HuoDaoRpt huoDaoRpt;
         #endregion
 
         #region 构造函数
@@ -265,19 +270,24 @@ namespace MachineJPAdapterDll
         /// <summary>
         /// 货机主机信息
         /// </summary>
-        public string MachineInfo()
+        public MachineRpt MachineInfo()
         {
+            MachineRpt machineRpt = new MachineRpt();
+
             //VMC参数
             VmcSetup vmcSetup = base.GET_SETUP();
+            machineRpt.VmcSetup = vmcSetup.ToString();
             //VMC状态
             StatusRpt statusRpt = base.GET_STATUS();
+            machineRpt.VmcStatus = statusRpt.ToString();
             //硬币器
             InfoRpt_17 infoRpt_17 = base.GetCoinInfo();
+            machineRpt.CoinRpt = infoRpt_17.ToString();
             //纸币器
             InfoRpt_16 infoRpt_16 = base.GetPaperInfo();
+            machineRpt.PaperRpt = infoRpt_16.ToString();
 
-            return string.Format("VMC系统参数：{0}\r\nVMC状态：{1}\r\n硬币器信息：{2}\r\n纸币器信息：{3}\r\n",
-                vmcSetup.ToString(), statusRpt.ToString(), infoRpt_17.ToString(), infoRpt_16.ToString());
+            return machineRpt;
         }
         #endregion
 
@@ -285,10 +295,86 @@ namespace MachineJPAdapterDll
         /// <summary>
         /// 货柜信息
         /// </summary>
-        public string BoxInfo(int box)
+        public BoxRpt BoxInfo(int box)
         {
+            BoxRpt boxRpt = new BoxRpt();
+
             HuoDaoRpt huoDaoRpt = base.GET_HUODAO((byte)box);
-            return "货道信息：\r\n" + huoDaoRpt.ToString() + "\r\n";
+            foreach (HuoDaoInfo huoDaoInfo in huoDaoRpt.HuoDaoInfoList)
+            {
+                RoadRpt roadRpt = new RoadRpt();
+                roadRpt.IsOK = huoDaoInfo.HuoDaoSt == HuoDaoSt.正常 ? true : false;
+                boxRpt.RoadCollection.RoadList.Add(roadRpt);
+            }
+
+            return boxRpt;
+        }
+        #endregion
+
+        #region 查询单个货道信息
+        /// <summary>
+        /// 查询单个货道信息
+        /// </summary>
+        public RoadRpt QueryRoadRpt(int box, int floor, int num)
+        {
+            RoadRpt roadRpt = new RoadRpt();
+
+            if (huoDaoRpt == null)
+            {
+                huoDaoRpt = base.GET_HUODAO((byte)box);
+            }
+
+            int hd_id = -1;
+
+            #region 计算货道
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load("MachineConfig.xml");
+            XmlNode machineNode = xmlDoc.SelectSingleNode("machine");
+            for (int i = 0; i < machineNode.ChildNodes.Count; i++)
+            {
+                XmlNode boxNode = machineNode.ChildNodes[i];
+                if (boxNode.Attributes["com"].Value == m_com)
+                {
+                    int colcount = int.Parse(boxNode.Attributes["colcount"].Value);
+                    hd_id = (byte)((floor - 1) * colcount + num);
+                    break;
+                }
+            }
+            #endregion
+
+            if (hd_id <= 0 || hd_id > huoDaoRpt.HuoDaoInfoList.Count)
+            {
+                roadRpt.IsOK = false;
+                roadRpt.ErrorMsg = "换算物理货道失败";
+                return roadRpt;
+            }
+
+            HuoDaoInfo huoDaoInfo = huoDaoRpt.HuoDaoInfoList[hd_id - 1];
+
+            roadRpt.Floor = floor;
+            roadRpt.Num = num;
+            if (huoDaoInfo.HuoDaoSt == HuoDaoSt.正常)
+            {
+                roadRpt.IsOK = true;
+                roadRpt.Remainder = huoDaoInfo.Remainder;
+            }
+            else
+            {
+                roadRpt.IsOK = false;
+                switch (huoDaoInfo.HuoDaoSt)
+                {
+                    case HuoDaoSt.故障:
+                        roadRpt.ErrorMsg = "货道故障";
+                        break;
+                    case HuoDaoSt.货道不存在:
+                        roadRpt.ErrorMsg = "货道不存在";
+                        break;
+                    case HuoDaoSt.暂不可用:
+                        roadRpt.ErrorMsg = "货道暂不可用";
+                        break;
+                }
+            }
+            return roadRpt;
         }
         #endregion
 

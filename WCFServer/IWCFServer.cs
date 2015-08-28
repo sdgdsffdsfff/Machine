@@ -57,11 +57,17 @@ namespace WCFServerDll
         /// 货机主机信息
         /// </summary>
         [OperationContract]
-        string MachineInfo();
+        MachineRpt MachineInfo();
         /// <summary>
         /// 货柜信息
         /// </summary>
+        /// <param name="com">货柜串口号</param>
+        /// <param name="box">货柜号</param>
         [OperationContract]
-        string BoxInfo(int box);
+        BoxRpt BoxInfo(string com, int box);
+        /// <summary>
+        /// 查询单个货道信息
+        /// </summary>
+        RoadRpt QueryRoadRpt(string com, int box, int floor, int num);
     }
 }

@@ -41,7 +41,12 @@
   <ItemGroup>
     <Compile Include="IMachine.cs" />
     <Compile Include="Models\AmountRpt.cs" />
+    <Compile Include="Models\BoxRpt.cs" />
+    <Compile Include="Models\MachineRpt.cs" />
     <Compile Include="Models\OperateResult.cs" />
+    <Compile Include="Models\RoadCollectionRpt.cs" />
+    <Compile Include="Models\RoadRpt.cs" />
+    <Compile Include="Models\IWCFResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

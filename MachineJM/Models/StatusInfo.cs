@@ -13,6 +13,20 @@ namespace MachineJMDll.Models
         /// <summary>
         /// 是否正常
         /// </summary>
+        public bool IsOK { get; set; }
+        /// <summary>
+        /// 状态信息
+        /// </summary>
+        public string Msg { get; set; }
+
+        public StatusInfo()
+        {
+            Msg = string.Empty;
+        }
+
+        /// <summary>
+        /// 是否正常
+        /// </summary>
         public bool IsNormal { get; set; }
         /// <summary>
         /// 状态标题

@@ -62,7 +62,7 @@ namespace MachineJPDll.Models
             {
                 List<HuoDaoInfo> list = new List<HuoDaoInfo>();
 
-                if (m_data.Length == 88)
+                if (m_data.Length == 80)
                 {
 
                     for (int i = 0; i < 80; i++)

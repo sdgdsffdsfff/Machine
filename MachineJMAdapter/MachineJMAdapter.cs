@@ -252,11 +252,14 @@ namespace MachineJMAdapterDll
         /// <summary>
         /// 货机主机信息
         /// </summary>
-        public string MachineInfo()
+        public MachineRpt MachineInfo()
         {
+            MachineRpt machineRpt = new MachineRpt();
             //主板
-            StatusInfoCollection mainBoardInfo = base.QueryMainBoardInfo();
-            return mainBoardInfo.ToString();
+            MainBoardInfo mainBoardInfo = base.QueryMainBoardInfo();
+            machineRpt.VmcStatus = mainBoardInfo.ToString();
+
+            return machineRpt;
         }
         #endregion
 
@@ -264,32 +267,65 @@ namespace MachineJMAdapterDll
         /// <summary>
         /// 货柜信息
         /// </summary>
-        public string BoxInfo(int box)
+        public BoxRpt BoxInfo(int box)
         {
-            StringBuilder sb = new StringBuilder();
-            //制冷压缩机/风机/照明/除雾/广告灯/工控机等设备状态
-            StatusInfoCollection equipmentsStatus = base.QueryEquipmentsStatus(box);
-            //机器设备状态
-            StatusInfoCollection boxStatus = base.QueryBoxStatus(box);
-            //制冷压缩机/照明/除雾/广告灯/工控机等设备控制策略参数
-            List<StatusInfoCollection> equipmentAll = base.QueryEquipmentAll(box);
-            sb.AppendFormat("机器设备状态：{0}\r\n", boxStatus.ToString());
-            sb.AppendFormat("制冷压缩机/风机/照明/除雾/广告灯/工控机等设备状态：{0}\r\n", equipmentsStatus.ToString());
-            sb.AppendFormat("制冷压缩机/照明/除雾/广告灯/工控机等设备控制策略参数：\r\n");
-            foreach (StatusInfoCollection item in equipmentAll)
-            {
-                sb.AppendFormat("{0}\r\n", item.ToString());
-            }
-            //货道信息
-            sb.AppendFormat("货道信息：\r\n");
-            List<RoadModel> roadList = JMBoxConfigUtil.GetRoadsConfig(box);
-            foreach (RoadModel road in roadList)
-            {
-                StatusInfoCollection roadInfo = base.QueryRoadInfo(box, road.Floor, road.Num);
-                sb.AppendFormat("{0}层{1}号货道：{2}；", road.Floor, road.Num, roadInfo.IsNormal ? "正常" : "异常");
-            }
+            BoxRpt boxRpt = new BoxRpt();
 
-            return sb.ToString();
+            //机器设备状态
+            BoxStatus boxStatus = base.QueryBoxStatus(box);
+            boxRpt.BoxStatus += string.Format("机器设备状态：\r\n{0}\r\n", boxStatus.ToString());
+            //制冷压缩机/风机/照明/除雾/广告灯/工控机等设备状态
+            EquipmentsStatus equipmentsStatus = base.QueryEquipmentsStatus(box);
+            boxRpt.BoxStatus += string.Format("制冷压缩机/风机/照明/除雾/广告灯/工控机等设备状态：\r\n{0}\r\n", equipmentsStatus.ToString());
+
+            //制冷压缩机/照明/除雾/广告灯/工控机等设备控制策略参数
+            EquipmentInfo equipmentAll = base.QueryEquipmentAll(box);
+            boxRpt.BoxSetup += equipmentAll.ToString();
+
+            //货道信息
+            RoadModelCollection roadModelCollection = JMBoxConfigUtil.GetRoadsConfig(box);
+            foreach (RoadModel road in roadModelCollection.RoadList)
+            {
+                RoadInfo roadInfo = base.QueryRoadInfo(box, road.Floor, road.Num);
+
+                RoadRpt roadRpt = new RoadRpt();
+                roadRpt.Floor = road.Floor;
+                roadRpt.Num = road.Num;
+                roadRpt.IsOK = roadInfo.IsOK;
+                roadRpt.ErrorMsg = roadInfo.ErrorMsg;
+                roadRpt.Price = roadInfo.Price;
+
+                boxRpt.RoadCollection.RoadList.Add(roadRpt);
+            }
+            boxRpt.RoadCollection.FloorCount = roadModelCollection.FloorCount;
+
+            return boxRpt;
+        }
+        #endregion
+
+        #region 查询单个货道信息
+        /// <summary>
+        /// 查询单个货道信息
+        /// </summary>
+        public RoadRpt QueryRoadRpt(int box, int floor, int num)
+        {
+            RoadRpt roadRpt = new RoadRpt();
+            int cost;
+            string status;
+            bool bl = base.QueryRoadInfo(box, floor, num, out cost, out status);
+            roadRpt.Floor = floor;
+            roadRpt.Num = num;
+            if (bl)
+            {
+                roadRpt.IsOK = true;
+                roadRpt.Price = cost;
+            }
+            else
+            {
+                roadRpt.IsOK = false;
+                roadRpt.ErrorMsg = status;
+            }
+            return roadRpt;
         }
         #endregion
 

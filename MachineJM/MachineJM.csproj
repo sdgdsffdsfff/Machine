@@ -42,8 +42,13 @@
   <ItemGroup>
     <Compile Include="Enums\Status.cs" />
     <Compile Include="MachineJM.cs" />
+    <Compile Include="Models\BoxStatus.cs" />
+    <Compile Include="Models\EquipmentInfo.cs" />
+    <Compile Include="Models\EquipmentParameter.cs" />
+    <Compile Include="Models\EquipmentsStatus.cs" />
+    <Compile Include="Models\MainBoardInfo.cs" />
+    <Compile Include="Models\RoadInfo.cs" />
     <Compile Include="Models\StatusInfo.cs" />
-    <Compile Include="Models\StatusInfoCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\CommonUtil.cs" />
     <Compile Include="Utils\EnumHelper.cs" />
