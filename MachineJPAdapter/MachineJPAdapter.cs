@@ -6,6 +6,7 @@ using System.Xml;
 using CommonDll;
 using IMachineDll;
 using IMachineDll.Models;
+using MachineJPAdapterDll.Utils;
 using MachineJPDll;
 using MachineJPDll.Enums;
 using MachineJPDll.Models;
@@ -129,19 +130,7 @@ namespace MachineJPAdapterDll
             byte hd_id = 0x00;
 
             #region 计算货道
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load("MachineConfig.xml");
-            XmlNode machineNode = xmlDoc.SelectSingleNode("machine");
-            for (int i = 0; i < machineNode.ChildNodes.Count; i++)
-            {
-                XmlNode boxNode = machineNode.ChildNodes[i];
-                if (boxNode.Attributes["com"].Value == m_com)
-                {
-                    int colcount = int.Parse(boxNode.Attributes["colcount"].Value);
-                    hd_id = (byte)((floor - 1) * colcount + num);
-                    break;
-                }
-            }
+            hd_id = (byte)((floor - 1) * JPBoxConfigUtil.GetColcount(m_com) + num);
             #endregion
 
             byte type = cash ? (byte)0x00 : (byte)0x01;
@@ -299,11 +288,29 @@ namespace MachineJPAdapterDll
         {
             BoxRpt boxRpt = new BoxRpt();
 
+            int colcount = JPBoxConfigUtil.GetColcount(m_com);
             HuoDaoRpt huoDaoRpt = base.GET_HUODAO((byte)box);
+            int i = 0;
             foreach (HuoDaoInfo huoDaoInfo in huoDaoRpt.HuoDaoInfoList)
             {
+                i++;
                 RoadRpt roadRpt = new RoadRpt();
+                roadRpt.Floor = ((i - 1) / colcount) + 1;
+                roadRpt.Num = ((i - 1) % colcount) + 1;
                 roadRpt.IsOK = huoDaoInfo.HuoDaoSt == HuoDaoSt.正常 ? true : false;
+                switch (huoDaoInfo.HuoDaoSt)
+                {
+                    case HuoDaoSt.货道不存在:
+                        roadRpt.ErrorMsg = "货道不存在";
+                        break;
+                    case HuoDaoSt.暂不可用:
+                        roadRpt.ErrorMsg = "货道暂不可用";
+                        break;
+                    case HuoDaoSt.故障:
+                        roadRpt.ErrorMsg = "货道故障";
+                        break;
+                }
+                roadRpt.Remainder = huoDaoInfo.Remainder;
                 boxRpt.RoadCollection.RoadList.Add(roadRpt);
             }
 
@@ -327,19 +334,7 @@ namespace MachineJPAdapterDll
             int hd_id = -1;
 
             #region 计算货道
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load("MachineConfig.xml");
-            XmlNode machineNode = xmlDoc.SelectSingleNode("machine");
-            for (int i = 0; i < machineNode.ChildNodes.Count; i++)
-            {
-                XmlNode boxNode = machineNode.ChildNodes[i];
-                if (boxNode.Attributes["com"].Value == m_com)
-                {
-                    int colcount = int.Parse(boxNode.Attributes["colcount"].Value);
-                    hd_id = (byte)((floor - 1) * colcount + num);
-                    break;
-                }
-            }
+            hd_id = (byte)((floor - 1) * JPBoxConfigUtil.GetColcount(m_com) + num);
             #endregion
 
             if (hd_id <= 0 || hd_id > huoDaoRpt.HuoDaoInfoList.Count)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- colcount每层货道数 boxno货道号 -->
-<machine boxno="1" com="COM3"  type="MachineJM">
+<machine boxno="1" com="COM3"  type="MachineJP" colcount="10">
   <box boxno="1" com="COM1" type="MachineJP" colcount="10">
   </box>
 </machine>
